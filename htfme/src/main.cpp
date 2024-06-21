@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <FreqMeasure.h>
 
 #define TX 1 
 #define RX 0
@@ -6,6 +7,7 @@
 #define S2I 5
 #define S1O 4 
 #define S2O 3
+#define RELAY 9 
 
 //s1, mode=0, UART : s2, mode=1, FREQ
 struct state_
@@ -16,15 +18,9 @@ struct state_
 
 struct state_ state; 
 
-
-void setup() 
-{
-  initSwitch();
-  initLed(); 
-}
-
 void initSwitch() 
 {
+  pinMode(RELAY, OUTPUT);
   pinMode(S1I, INPUT);
   pinMode(S2I, INPUT);
 }
@@ -35,6 +31,13 @@ void initLed()
   digitalWrite(S2O, HIGH);
   digitalWrite(S1O, HIGH);
 }
+
+void setup() 
+{
+  initSwitch();
+  initLed(); 
+}
+
 void sendPulse()
 {
    pinMode(RX, OUTPUT);
@@ -50,18 +53,28 @@ void sendPulse()
 
 void initFreq()
 {
-  ;; 
+  digitalWrite(RELAY, HIGH);
+  sendPulse();
+  FreqMeasure.begin();
 }
 
 void initUART()
 {
+  FreqMeasure.end();
+  digitalWrite(RELAY, LOW);
   sendPulse();
   pinMode(TX, INPUT);
   pinMode(RX, INPUT);
 }
 
+void freqLoop()
+{
+  ;;
+}
+
 void loop() {
 
+  /*  Button stuff  */
   if (!digitalRead(S1I)) //Button normally high
   {
 
@@ -89,6 +102,7 @@ void loop() {
     digitalWrite(S2O, LOW);
     digitalWrite(S1O, HIGH);
   }
+  /*  Button stuff  */
 
   if (!state.enabled) //If mode change, do init functions
   {
@@ -104,6 +118,11 @@ void loop() {
     }
 
     state.enabled = true;
+  }
+
+  if(state.mode) // Check for frequency measurements if in that mode;
+  {
+    freqLoop(); 
   }
 
 }
