@@ -18,6 +18,10 @@ struct state_
 
 struct state_ state; 
 
+double sum = 0; 
+int count = 0; 
+long currentTime = 0;  
+
 void initSwitch() 
 {
   pinMode(RELAY, OUTPUT);
@@ -41,35 +45,50 @@ void setup()
 void sendPulse()
 {
    pinMode(RX, OUTPUT);
-
    digitalWrite(RX, LOW);
    delay(500);
    digitalWrite(RX, HIGH);
-
-   pinMode(S1I, INPUT);
-   pinMode(S2I, INPUT);
-
 }
 
 void initFreq()
 {
-  digitalWrite(RELAY, HIGH);
   sendPulse();
+  Serial.begin(9600);
+  digitalWrite(RELAY, HIGH);
+  sum = 0; 
+  count = 0; 
+  currentTime = millis(); 
   FreqMeasure.begin();
-}
+} 
 
 void initUART()
 {
-  FreqMeasure.end();
+  sendPulse(); 
+  Serial.end(); 
+  FreqMeasure.end(); 
   digitalWrite(RELAY, LOW);
-  sendPulse();
   pinMode(TX, INPUT);
   pinMode(RX, INPUT);
 }
 
 void freqLoop()
 {
-  ;;
+  if(FreqMeasure.available())
+  {
+    sum += FreqMeasure.read();
+    count++;
+    if(count > 50)
+    {
+      if(millis() - currentTime > 100)
+      {
+        float frequency = FreqMeasure.countToFrequency(sum / count);
+        Serial.println(frequency);
+        sum = 0; 
+        count = 0; 
+        currentTime = millis();
+      }
+    }
+  }
 }
 
 void loop() {
@@ -114,7 +133,7 @@ void loop() {
         break;
      case 1: 
         initFreq();
-         break; 
+        break; 
     }
 
     state.enabled = true;
